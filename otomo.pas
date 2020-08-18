@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////
 //
-//                         OTOMO
+//                          OTOMO
 //               Radar + Assit for Interlude
-//                by LanGhost (c) 2020
+//                  by LanGhost (c) 2020
 //
 ///////////////////////////////////////////////////////////
 
@@ -16,6 +16,7 @@ const
     ASSISTER_MODE_SOUND = 'assist.wav';
     DEAD_SOUND = 'dead.wav';
     FOE_CAST_SOUND = 'foe.wav';
+    ARCH_ATTACK_DELAY = 500;
     ELEXIR_MIN_HP = 15;
     ELEXIR_MIN_CP = 15;
     MAX_ASSISTERS = 50;
@@ -33,6 +34,7 @@ const
     FLASH_SKILLS_COUNT = 6;
     FLASH_DISTANCE = 200;
     ASSIST_SKILL_RETRIES = 30;
+    ARCH_BUFFS_COUNT = 9;
 
 type
     AttackType = (SURRENDER_ATTACK, LIGHT_ATTACK, SOLAR_ATTACK);
@@ -57,6 +59,7 @@ var
     SolarRangeSkills: array[1..SOLAR_SKILLS_COUNT] of integer;
     AssistSkills: array[1..ASSIST_SKILLS_COUNT] of integer;
     FlashSkills: array[1..FLASH_SKILLS_COUNT] of integer;
+    ArchBuffs : array[1..ARCH_BUFFS_COUNT] of integer;
     PartyAssisters: TStringList;
     CurTarget, PrevTarget: TL2Live;
     IsRadar: boolean = false;
@@ -69,6 +72,7 @@ var
     Leaders, Assisters: TStringList;
     FindFoe, ArcaneChaos: boolean;
     ShowLeader, ShowAssisters, FindAfterKill: boolean;
+    AutoDash: boolean;
 
 ///////////////////////////////////////////////////////////
 //
@@ -140,6 +144,7 @@ begin
     Crystal := Sets.LoadB('Buff', 'SanctityCrystal');
     ResistAquaInCombat := Sets.LoadB('Buff', 'ResistAquaInCombat');
     PartyNobless := Sets.LoadB('Buff', 'PartyNobless');
+    AutoDash := Sets.LoadB('Buff', 'AutoDash');
 
     ReskillDelay := Sets.LoadI('Reskill', 'Delay');
     ReskillSolar := Sets.LoadB('Reskill', 'AutoSolar');
@@ -162,6 +167,7 @@ begin
     ClassesList := TStringList.Create();
     Assisters := TStringList.Create();
     Leaders := TStringList.Create();
+
     CurRange := 0;
     CurClass := 0;
 
@@ -175,6 +181,16 @@ begin
     MMBuffs[4] := RESIST_AQUA_BUFF;
     MMBuffs[5] := WIND_WALK_BUFF;
     MMBuffs[6] := ACUMEN_BUFF;
+
+    ArchBuffs[1] := RAPID_SHOT_BUFF;
+    ArchBuffs[2] := CRYSTAL_BUFF;
+    ArchBuffs[3] := STANCE_BUFF;
+    ArchBuffs[4] := ACCURACY_BUFF;
+    ArchBuffs[5] := DASH_BUFF;
+    ArchBuffs[6] := NOBLESS_BUFF;
+    ArchBuffs[7] := BLESSING_SAGITARIUS_BUFF;
+    ArchBuffs[8] := HASTE_BUFF;
+    ArchBuffs[9] := WIND_WALK_BUFF;
 
     SurrRangeSkills[1] := SURRENDER_WATER_SKILL;
     SurrRangeSkills[2] := SOLAR_FLARE_SKILL;
@@ -396,6 +412,70 @@ begin
     end;
 end;
 
+procedure SelfBuffArch();
+var
+    i : integer;
+    buff, skill: TL2Skill;
+begin
+    for i := 1 to ARCH_BUFFS_COUNT do
+    begin
+        if (not User.Buffs.ByID(ArchBuffs[i], buff))
+        then begin
+            if (ArchBuffs[i] = DASH_BUFF) and (not AutoDash)
+            then continue;
+
+            if (ArchBuffs[i] = CRYSTAL_BUFF)
+            then begin
+                if (not Crystal)
+                then continue;
+
+                Engine.UseItem(CRYSTAL_ITEM);
+                Delay(100);
+                continue;
+            end;
+
+            if (ArchBuffs[i] = NOBLESS_BUFF)
+            then begin
+                Engine.SetTarget(User);
+                Engine.UseSkill(NOBLESS_BUFF);
+                Engine.CancelTarget;
+                Delay(800);
+                continue;
+            end;
+
+            if (ArchBuffs[i] = WIND_WALK_BUFF)
+            then begin
+                if (not User.Buffs.ByID(PAAGRIO_HASTE_BUFF, buff)) and
+                    (not User.Buffs.ByID(HASTE_POTION_BUFF, buff))
+                then begin
+                    Engine.UseItem(HASTE_POTION_ITEM);
+                    Delay(100);
+                    continue;
+                end;
+            end;
+
+            if (ArchBuffs[i] = HASTE_BUFF)
+            then begin
+                if (not User.Buffs.ByID(SWIFT_ATTACK_POTION_BUFF, buff))
+                then begin
+                    Engine.UseItem(SWIFT_ATTACK_POTION_ITEM);
+                    Delay(100);
+                    continue;
+                end;
+            end;
+
+            Engine.UseSkill(ArchBuffs[i]);
+            Delay(600);
+        end;
+    end;
+
+    if (User.HP < ELEXIR_MIN_HP)
+    then Engine.UseItem(ELEXIR_HP_ITEM);
+
+    if (User.CP < ELEXIR_MIN_CP)
+    then Engine.UseItem(ELEXIR_CP_ITEM);
+end;
+
 procedure SelfBuffMM();
 var
     i : integer;
@@ -417,7 +497,7 @@ begin
                 then continue;
 
                 Engine.UseItem(CRYSTAL_ITEM);
-                Delay(400);
+                Delay(100);
                 continue;
             end;
 
@@ -445,7 +525,7 @@ begin
                     (not User.Buffs.ByID(HASTE_POTION_BUFF, buff))
                 then begin
                     Engine.UseItem(HASTE_POTION_ITEM);
-                    Delay(400);
+                    Delay(100);
                     continue;
                 end;
             end;
@@ -456,7 +536,7 @@ begin
                     (not User.Buffs.ByID(MAGIC_HASTE_POTION_BUFF, buff))
                 then begin
                     Engine.UseItem(MAGIC_HASTE_POTION_ITEM);
-                    Delay(400);
+                    Delay(100);
                     continue;
                 end;
             end;
@@ -721,7 +801,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord('W')) > 1)
+                if (GetKeyState(ord('Q')) > 1)
                 then begin
                     if (CurRange < RangeList.Count - 1)
                     then CurRange := CurRange + 1
@@ -731,7 +811,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord('Q')) > 1)
+                if (GetKeyState(ord('W')) > 1)
                 then begin
                     if (CurClass < ClassesList.Count - 1)
                     then CurClass := CurClass + 1
@@ -767,8 +847,13 @@ begin
     while true do
     begin
         try
-            SelfBuffMM();
-            if (not IsRadar) then PartyBuffMM();
+            if (User.ClassID = MM_CLASS)
+            then begin
+                SelfBuffMM();
+                if (not IsRadar)
+                then PartyBuffMM();
+            end
+            else SelfBuffArch();
         except
             print('Fail to buff.');
         end;
@@ -817,11 +902,18 @@ begin
     begin
         try
             if (AutoAttack)
-            then RangeAttackMM()
+            then begin
+                if (User.ClassID = MM_CLASS)
+                then RangeAttackMM()
+                else Engine.Attack(ARCH_ATTACK_DELAY, false);
+            end
             else begin
-                AssistAttack();
-                AutoFlash();
-                delay(100);
+                if (User.ClassID = MM_CLASS)
+                then begin
+                    AssistAttack();
+                    AutoFlash();
+                    delay(100);
+                end;
             end;
             delay(10);
         except
@@ -895,9 +987,9 @@ end;
 
 procedure TargetSaveThread();
 var
-    Action : TL2Action;
-    p1, p2 : pointer;
-    enemy : TL2Char;
+    Action: TL2Action;
+    p1, p2: pointer;
+    enemy: TL2Char;
 begin
     while True do
     begin
@@ -963,50 +1055,53 @@ var
 begin
     while true do
     begin
-        for i := 0 to CharList.Count - 1 do
-        begin
-            target := CharList.Items(i);
+        try
+            for i := 0 to CharList.Count - 1 do
+            begin
+                target := CharList.Items(i);
 
-            if (ShowAssisters)
-            then begin
-                if (target.Cast.ID = SURRENDER_WATER_SKILL)
+                if (ShowAssisters) and (target.ClanID <> User.ClanID)
                 then begin
-                    found := false;
+                    if (target.Cast.ID = SURRENDER_WATER_SKILL)
+                    then begin
+                        found := false;
+                        for j := 0 to Assisters.Count - 1 do
+                        begin
+                            if (target.Name = Assisters[j])
+                            then begin
+                                found := true;
+                                break;
+                            end;
+                        end;
+
+                        if (not found)
+                        then begin
+                            if (Assisters.Count > MAX_ASSISTERS)
+                            then Assisters.Delete(MAX_ASSISTERS);
+                            Assisters.Insert(0, target.Name);
+                        end;
+                    end;
+
                     for j := 0 to Assisters.Count - 1 do
                     begin
                         if (target.Name = Assisters[j])
                         then begin
-                            found := true;
+                            SendTitle(target.OID, '>>> ASSISTER <<<');
+                            delay(10);
                             break;
                         end;
                     end;
-
-                    if (not found)
-                    then begin
-                        if (Assisters.Count > MAX_ASSISTERS)
-                        then Assisters.Delete(MAX_ASSISTERS);
-                        Assisters.Insert(0, target.Name);
-                    end;
                 end;
 
-                for j := 0 to Assisters.Count - 1 do
-                begin
-                    if (target.Name = Assisters[j])
-                    then begin
-                        SendTitle(target.OID, '>>> ASSISTER <<<');
-                        delay(10);
-                        break;
-                    end;
+                if (target.Name = Leaders[0]) and (ShowLeader)
+                then begin
+                    SendTitle(target.OID, '>>> LEADER <<<');
+                    delay(10);
                 end;
             end;
-
-            if (target.Name = Leaders[0]) and (ShowLeader)
-            then begin
-                SendTitle(target.OID, '>>> LEADER <<<');
-                delay(10);
-            end;
+        except
+            print('Fail to set title');
         end;
-
         delay(1000);
     end;
 end;
