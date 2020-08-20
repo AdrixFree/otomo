@@ -31,7 +31,7 @@ const
     TRANCE_DEBUFF_BIT = 7;
     MIN_CAST_SPD = 1671;
     ASSIST_SKILLS_COUNT = 3;
-    FLASH_SKILLS_COUNT = 6;
+    FLASH_SKILLS_COUNT = 7;
     FLASH_DISTANCE = 200;
     ASSIST_SKILL_RETRIES = 30;
     ARCH_BUFFS_COUNT = 9;
@@ -64,8 +64,8 @@ var
     CurTarget, PrevTarget: TL2Live;
     IsRadar: boolean = false;
     WarlordIgnore: boolean = false;
-    RangeList, ClassesList: TStringList;
-    CurRange, CurClass: integer;
+    RangeList, ClassList, ClanList: TStringList;
+    CurRange, CurClass, CurClan: integer;
     ReskillDelay: integer;
     ReskillSolar: boolean;
     DeadSound, RadarSound, AssistSound: boolean;
@@ -128,6 +128,11 @@ begin
     FindFoe := Sets.LoadB('Global', 'FindFOE');
 
     FindAfterKill := Sets.LoadB('Radar', 'NextTargetAfterKill');
+    for i := 1 to 4 do
+    begin
+        str := Sets.LoadS('Radar', 'Clan' + IntToStr(i));
+        if (str <> '') then ClanList.Add(str);
+    end;
 
     for i := 1 to 3 do
     begin
@@ -164,16 +169,20 @@ begin
     PartyAssisters := TStringList.Create();
     Sets := TSettings.Create(script.Path + CFG_FILE_NAME);
     RangeList := TStringList.Create();
-    ClassesList := TStringList.Create();
+    ClassList := TStringList.Create();
+    ClanList := TStringList.Create();
     Assisters := TStringList.Create();
     Leaders := TStringList.Create();
 
     CurRange := 0;
     CurClass := 0;
+    CurClan := 0;
 
-    ClassesList.Add('ALL');
-    ClassesList.Add('MM');
-    ClassesList.Add('BP');
+    ClassList.Add('ALL');
+    ClassList.Add('MM');
+    ClassList.Add('BP');
+
+    ClanList.Add('ALL');
 
     MMBuffs[1] := NOBLESS_BUFF;
     MMBuffs[2] := ARCANE_BUFF;
@@ -210,12 +219,13 @@ begin
     AssistSkills[2] := AURA_SYMPHONY_SKILL;
     AssistSkills[3] := SPELL_FORCE_SKILL;
 
-    FlashSkills[1] := NOOBLE_SKILL;
+    FlashSkills[1] := NOBLESS_SKILL;
     FlashSkills[2] := RESURECTION_SKILL;
     FlashSkills[3] := MASS_RESURECTION_SKILL;
     FlashSkills[4] := FOE_SKILL;
     FlashSkills[5] := ALI_CLEANSE;
     FlashSkills[6] := CELESTIAL_SHIELD;
+    FlashSkills[7] := SPELL_FORCE_SKILL;
 
     PrintBotMsg('===========================');
     PrintBotMsg('Welcome to OTOMO!');
@@ -705,11 +715,11 @@ begin
                 if (AutoAttack)
                 then begin
                     AutoAttack := false;
-                    PrintBotMsg('Auto attack STOP');
+                    PrintBotMsg('Auto attack: STOP');
                 end else
                 begin
                     AutoAttack := true;
-                    PrintBotMsg('Auto attack RUN');
+                    PrintBotMsg('Auto attack: RUN');
                 end;
                 delay(300);
             end;
@@ -719,11 +729,11 @@ begin
                 if (FastRes)
                 then begin
                     FastRes := false;
-                    PrintBotMsg('Fast resurrection DISABLED');
+                    PrintBotMsg('Fast resurrection: DISABLED');
                 end else
                 begin
                     FastRes := true;
-                    PrintBotMsg('Fast resurrection ENABLED');
+                    PrintBotMsg('Fast resurrection: ENABLED');
                 end;
                 delay(300);
             end;
@@ -787,9 +797,15 @@ begin
                         if (target.Name <> LastTargetName) and (not target.Dead)
                             and (target.ClanID <> User.ClanID) and (not target.IsMember)
                         then begin
-                            if (ClassesList[CurClass] <> 'ALL')
+                            if (ClassList[CurClass] <> 'ALL')
                             then begin
-                                if (target.ClassID <> ClassToID(ClassesList[CurClass]))
+                                if (target.ClassID <> ClassToID(ClassList[CurClass]))
+                                then continue;
+                            end;
+
+                            if (ClanList[CurClan] <> 'ALL')
+                            then begin
+                                if (target.Clan <> ClanList[CurClan])
                                 then continue;
                             end;
 
@@ -807,17 +823,27 @@ begin
                     then CurRange := CurRange + 1
                     else CurRange := 0;
 
-                    PrintBotMsg('Reskill range ' + RangeList[CurRange]);
+                    PrintBotMsg('Reskill range: ' + RangeList[CurRange]);
                     delay(300);
                 end;
 
                 if (GetKeyState(ord('W')) > 1)
                 then begin
-                    if (CurClass < ClassesList.Count - 1)
+                    if (CurClass < ClassList.Count - 1)
                     then CurClass := CurClass + 1
                     else CurClass := 0;
 
-                    PrintBotMsg('Target class ' + ClassesList[CurClass]);
+                    PrintBotMsg('Target class: ' + ClassList[CurClass]);
+                    delay(300);
+                end;
+
+                if (GetKeyState(ord('B')) > 1)
+                then begin
+                    if (CurClan < ClanList.Count - 1)
+                    then CurClan := CurClan + 1
+                    else CurClan := 0;
+
+                    PrintBotMsg('Target clan: ' + ClanList[CurClan]);
                     delay(300);
                 end;
 
@@ -826,11 +852,11 @@ begin
                     if (WarlordIgnore)
                     then begin
                         WarlordIgnore := false;
-                        PrintBotMsg('Warlord Ignore DISABLED');
+                        PrintBotMsg('Warlord Ignore: DISABLED');
                     end else
                     begin
                         WarlordIgnore := true;
-                        PrintBotMsg('Warlord Ignore ENABLED');
+                        PrintBotMsg('Warlord Ignore: ENABLED');
                     end;
                     delay(300);
                 end;
@@ -940,9 +966,15 @@ begin
                     and (not target.Dead) and (target.ClanID <> User.ClanID)
                     and (not target.IsMember)
                 then begin
-                    if (ClassesList[CurClass] <> 'ALL')
+                    if (ClassList[CurClass] <> 'ALL')
                     then begin
-                        if (target.ClassID <> ClassToID(ClassesList[CurClass]))
+                        if (target.ClassID <> ClassToID(ClassList[CurClass]))
+                        then continue;
+                    end;
+
+                    if (ClanList[CurClan] <> 'ALL')
+                    then begin
+                        if (target.Clan <> ClanList[CurClan])
                         then continue;
                     end;
 
@@ -1047,7 +1079,7 @@ begin
     end;
 end;
 
-procedure TitlesThread();
+procedure AssistersThread();
 var
     i, j: integer;
     target: TL2Char;
@@ -1081,7 +1113,30 @@ begin
                             Assisters.Insert(0, target.Name);
                         end;
                     end;
+                end;
+            end;
+        except
+            print('Fail to set title');
+        end;
+        delay(1000);
+    end;
+end;
 
+procedure TitlesThread();
+var
+    i, j: integer;
+    target: TL2Char;
+    found: boolean;
+begin
+    while true do
+    begin
+        try
+            for i := 0 to CharList.Count - 1 do
+            begin
+                target := CharList.Items(i);
+
+                if (ShowAssisters) and (target.ClanID <> User.ClanID)
+                then begin
                     for j := 0 to Assisters.Count - 1 do
                     begin
                         if (target.Name = Assisters[j])
@@ -1135,9 +1190,15 @@ begin
                         if (target.Name <> LastTargetName) and (not target.Dead)
                             and (target.ClanID <> User.ClanID) and (not target.IsMember)
                         then begin
-                            if (ClassesList[CurClass] <> 'ALL')
+                            if (ClassList[CurClass] <> 'ALL')
                             then begin
-                                if (target.ClassID <> ClassToID(ClassesList[CurClass]))
+                                if (target.ClassID <> ClassToID(ClassList[CurClass]))
+                                then continue;
+                            end;
+
+                            if (ClanList[CurClan] <> 'ALL')
+                            then begin
+                                if (target.Clan <> ClanList[CurClan])
                                 then continue;
                             end;
 
@@ -1175,5 +1236,6 @@ begin
     script.NewThread(@TargetSaveThread);
     script.NewThread(@HoldTargetThread);
     script.NewThread(@TitlesThread);
+    script.NewThread(@AssistersThread);
     script.NewThread(@FindTargetAfterKillThread);
 end.
