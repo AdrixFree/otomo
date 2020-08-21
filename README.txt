@@ -17,4 +17,4 @@ D - Move to assister
 S - Cancel
 SPACE - Auto attack
 
-<img src="https://i.ibb.co/JdksHTs/logo.png"></img>
+https://i.ibb.co/JdksHTs/logo.png
