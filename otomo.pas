@@ -62,7 +62,7 @@ var
     ArchBuffs : array[1..ARCH_BUFFS_COUNT] of integer;
     PartyAssisters: TStringList;
     CurTarget, PrevTarget: TL2Live;
-    IsRadar: boolean = false;
+    IsRadar, IsAutoAttack: boolean = false;
     WarlordIgnore: boolean = false;
     RangeList, ClassList, ClanList: TStringList;
     CurRange, CurClass, CurClan: integer;
@@ -138,7 +138,7 @@ begin
     FindFoe := Sets.LoadB('Global', 'FindFOE');
 
     FindAfterKill := Sets.LoadB('Radar', 'NextTargetAfterKill');
-    IsAutoAttack := Sets.LoadS('Radar', 'AutoAttack');
+    IsAutoAttack := Sets.LoadB('Radar', 'AutoAttack');
     for i := 1 to 4 do
     begin
         str := Sets.LoadS('Radar', 'Clan' + IntToStr(i));
