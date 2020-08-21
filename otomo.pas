@@ -71,7 +71,7 @@ var
     DeadSound, RadarSound, AssistSound: boolean;
     Leaders, Assisters: TStringList;
     FindFoe, ArcaneChaos: boolean;
-    ShowLeader, ShowAssisters, FindAfterKill: boolean;
+    ShowLeader, ShowAssisters, FindAfterKill, ShowPartyMembers: boolean;
     AutoDash: boolean;
     PartyList: TStringList;
     AAKey, FRKey, CKey, MAKey: Char;
@@ -151,9 +151,10 @@ begin
         if (str <> '') then PartyAssisters.Add(str);
     end;
 
-    Leaders.Add(Sets.LoadS('Titles', 'LeaderName'));
-    ShowLeader := Sets.LoadB('Titles', 'ShowLeader');
-    ShowAssisters := Sets.LoadB('Titles', 'ShowAssisters');
+    Leaders.Add(Sets.LoadS('BackLight', 'LeaderName'));
+    ShowLeader := Sets.LoadB('BackLight', 'ShowLeader');
+    ShowPartyMembers := Sets.LoadB('BackLight', 'ShowPartyMembers');
+    ShowAssisters := Sets.LoadB('BackLight', 'ShowAssisters');
 
     PartyWalkingScroll := Sets.LoadB('Buff', 'PartyWalkingScroll');
     PartyResistAqua := Sets.LoadB('Buff', 'PartyResistAqua');
@@ -1148,10 +1149,13 @@ begin
     while true do
     begin
         try
-            PartyList.Clear();
-            for i := 0 to Party.Chars.Count - 1 do
-            begin
-                PartyList.Add(Party.Chars.Items(i).Name);
+            if (ShowPartyMembers)
+            then begin
+                PartyList.Clear();
+                for i := 0 to Party.Chars.Count - 1 do
+                begin
+                    PartyList.Add(Party.Chars.Items(i).Name);
+                end;
             end;
         except
             print('Fail to process party');
