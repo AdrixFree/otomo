@@ -43,13 +43,13 @@ var
     Sets: TSettings;
     FoundCancel: boolean = false;
     LastTargetName: string;
-    FastRes: boolean = true;
-    Crystal: boolean = true;
-    PartyWalkingScroll: boolean = true;
-    PartyResistAqua: boolean = true;
-    ResistAquaInCombat: boolean = true;
+    FastRes: boolean = false;
+    Crystal: boolean;
+    PartyWalkingScroll: boolean;
+    PartyResistAqua: boolean;
+    ResistAquaInCombat: boolean;
     CheckCancel: boolean;
-    AutoAttack: boolean = false;
+    AutoAttack: boolean;
     AtkType: AttackType;
     PartyNobless: boolean;
     AssistStatus: boolean = true;
@@ -73,6 +73,9 @@ var
     FindFoe, ArcaneChaos: boolean;
     ShowLeader, ShowAssisters, FindAfterKill: boolean;
     AutoDash: boolean;
+    PartyList: TStringList;
+    AAKey, FRKey, CKey, MAKey: Char;
+    NTKey, RRKey, NCSKey, NCKey, WIKey: Char;
 
 ///////////////////////////////////////////////////////////
 //
@@ -103,6 +106,13 @@ begin
     result := false;
 end;
 
+function LoadKey(key: string): Char;
+begin
+    if (key = 'SPACE')
+    then result := ' '
+    else result := key[1];
+end;
+
 ///////////////////////////////////////////////////////////
 //
 //                   PUBLIC FUNCTIONS
@@ -128,6 +138,7 @@ begin
     FindFoe := Sets.LoadB('Global', 'FindFOE');
 
     FindAfterKill := Sets.LoadB('Radar', 'NextTargetAfterKill');
+    IsAutoAttack := Sets.LoadS('Radar', 'AutoAttack');
     for i := 1 to 4 do
     begin
         str := Sets.LoadS('Radar', 'Clan' + IntToStr(i));
@@ -162,6 +173,16 @@ begin
     DeadSound := Sets.LoadB('Sound', 'TargetDead');
     RadarSound := Sets.LoadB('Sound', 'RadarMode');
     AssistSound := Sets.LoadB('Sound', 'AssistMode');
+
+    AAKey := LoadKey(Sets.LoadS('Keyboard', 'AutoAttack'));
+    FRKey := LoadKey(Sets.LoadS('Keyboard', 'FastResurrection'));
+    CKey := LoadKey(Sets.LoadS('Keyboard', 'Cancel'));
+    MAKey := LoadKey(Sets.LoadS('Keyboard', 'MoveToAssister'));
+    NTKey := LoadKey(Sets.LoadS('Keyboard', 'NextTarget'));
+    RRKey := LoadKey(Sets.LoadS('Keyboard', 'ReskillRange'));
+    NCSKey := LoadKey(Sets.LoadS('Keyboard', 'NextClass'));
+    NCKey := LoadKey(Sets.LoadS('Keyboard', 'NextClan'));
+    WIKey := LoadKey(Sets.LoadS('Keyboard', 'WarlordIgnore'));
 end;
 
 procedure Init();
@@ -173,6 +194,7 @@ begin
     ClanList := TStringList.Create();
     Assisters := TStringList.Create();
     Leaders := TStringList.Create();
+    PartyList := TStringList.Create();
 
     CurRange := 0;
     CurClass := 0;
@@ -228,9 +250,10 @@ begin
     FlashSkills[7] := SPELL_FORCE_SKILL;
 
     PrintBotMsg('===========================');
-    PrintBotMsg('Welcome to OTOMO!');
+    PrintBotMsg('Welcome to OTOMO v3.0');
     PrintBotMsg('Free Radar + Assister by LanGhost');
     PrintBotMsg('https://github.com/adrixfree');
+    PrintBotMsg('Change your configs in settings.ini');
     PrintBotMsg('===========================');
 end;
 
@@ -710,7 +733,7 @@ begin
     while true do
     begin
         try
-            if (GetKeyState(ord(' ')) > 1)
+            if (GetKeyState(ord(AAKey)) > 1) and (IsAutoAttack)
             then begin
                 if (AutoAttack)
                 then begin
@@ -724,7 +747,7 @@ begin
                 delay(300);
             end;
 
-            if (GetKeyState(ord('Z')) > 1)
+            if (GetKeyState(ord(FRKey)) > 1)
             then begin
                 if (FastRes)
                 then begin
@@ -738,19 +761,7 @@ begin
                 delay(300);
             end;
 
-            if (GetKeyState(ord('F')) > 1) or (GetKeyState(ord('R')) > 1)
-            then begin
-                if (not User.Target.Dead)
-                then Engine.DUseSkill(AURA_BOLT_SKILL, false, false);
-
-                Engine.GetSkillList.ByID(AURA_FLASH_SKILL, aura);
-                if (aura.EndTime = 0)
-                then Engine.DUseSkill(AURA_FLASH_SKILL, false, false);
-
-                delay(1);
-            end;
-
-            if (GetKeyState(ord('S')) > 1)
+            if (GetKeyState(ord(CKey)) > 1)
             then begin
                 for i := 1 to ASSIST_SKILL_RETRIES do
                 begin
@@ -770,7 +781,7 @@ begin
 
             if (not IsRadar)
             then begin
-                if (GetKeyState(ord('D')) > 1)
+                if (GetKeyState(ord(MAKey)) > 1)
                 then begin
                     for i := 0 to PartyAssisters.Count - 1 do
                     begin
@@ -789,7 +800,7 @@ begin
 
             if (IsRadar)
             then begin
-                if (GetKeyState(ord('E')) > 1)
+                if (GetKeyState(ord(NTKey)) > 1)
                 then begin
                     for i := 0 to CharList.Count - 1 do
                     begin
@@ -817,7 +828,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord('Q')) > 1)
+                if (GetKeyState(ord(RRKey)) > 1)
                 then begin
                     if (CurRange < RangeList.Count - 1)
                     then CurRange := CurRange + 1
@@ -827,7 +838,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord('W')) > 1)
+                if (GetKeyState(ord(NCSKey)) > 1)
                 then begin
                     if (CurClass < ClassList.Count - 1)
                     then CurClass := CurClass + 1
@@ -837,7 +848,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord('B')) > 1)
+                if (GetKeyState(ord(NCKey)) > 1)
                 then begin
                     if (CurClan < ClanList.Count - 1)
                     then CurClan := CurClan + 1
@@ -847,7 +858,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord('A')) > 1)
+                if (GetKeyState(ord(WIKey)) > 1)
                 then begin
                     if (WarlordIgnore)
                     then begin
@@ -1079,6 +1090,76 @@ begin
     end;
 end;
 
+procedure OnPacket(ID1, ID2: cardinal; Data: pointer; DataSize: word);
+var
+    player: TPlayer;
+    i: integer;
+begin
+    try
+        if (ID1 = $03)
+        then begin
+            player := TPlayer.Create(Data, DataSize);
+            if (player.Team = 0)
+            then begin
+                for i := 0 to Assisters.Count - 1 do
+                begin
+                    if (Assisters[i] = player.Name)
+                    then begin
+                        player.SetTeam(2);
+                        player.SetTitleColor($FF, 0, 0);
+                        player.SetNickColor($FF, $FF, 0);
+                        break;
+                    end;
+                end;
+
+                for i := 0 to PartyList.Count - 1 do
+                begin
+                    if (PartyList[i] = player.Name)
+                    then begin
+                        player.SetTeam(1);
+                        player.SetTitleColor(0, $BF, $FF);
+                        player.SetNickColor(0, $BF, $FF);
+                        break;
+                    end;
+                end;
+
+                if (Leaders[0] = player.Name)
+                then begin
+                    player.SetTeam(1);
+                    player.SetNickColor(0, $FF, 0);
+                    player.SetTitleColor(0, $FF, 0);
+                    player.SetHero(true);
+                end;
+
+                if (player.Team > 0)
+                then player.SendToClient();
+            end;
+            player.Free();
+        end;
+    except
+        print('Fail to process server packet');
+    end;
+end;
+
+procedure PartyThread();
+var
+    i: integer;
+begin
+    while true do
+    begin
+        try
+            PartyList.Clear();
+            for i := 0 to Party.Chars.Count - 1 do
+            begin
+                PartyList.Add(Party.Chars.Items(i).Name);
+            end;
+        except
+            print('Fail to process party');
+        end;
+        delay(1000);
+    end;
+end;
+
 procedure AssistersThread();
 var
     i, j: integer;
@@ -1118,7 +1199,7 @@ begin
         except
             print('Fail to set title');
         end;
-        delay(1000);
+        delay(100);
     end;
 end;
 
@@ -1238,4 +1319,5 @@ begin
     script.NewThread(@TitlesThread);
     script.NewThread(@AssistersThread);
     script.NewThread(@FindTargetAfterKillThread);
+    script.NewThread(@PartyThread);
 end.
