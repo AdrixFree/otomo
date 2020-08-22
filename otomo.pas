@@ -138,7 +138,7 @@ begin
     FindFoe := Sets.LoadB('Global', 'FindFOE');
 
     FindAfterKill := Sets.LoadB('Radar', 'NextTargetAfterKill');
-    IsAutoAttack := Sets.LoadB('Radar', 'AutoAttack');
+    IsAutoAttack := Sets.LoadB('Global', 'AutoAttack');
     for i := 1 to 4 do
     begin
         str := Sets.LoadS('Radar', 'Clan' + IntToStr(i));
