@@ -11,12 +11,12 @@ unit UI;
 interface
 
 uses
-    SysUtils, Classes, Dialogs;
+    SysUtils, Classes, Dialogs, Attack;
 
 const
     UI_MOD = 0;
 
-    procedure RunUIThread;
+    procedure RunUIThread();
 
 implementation
 
@@ -26,7 +26,7 @@ implementation
 //
 ///////////////////////////////////////////////////////////
 
-procedure RunUIThread;
+procedure RunUIThread();
 var
     path: string;
 begin

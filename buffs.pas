@@ -11,7 +11,7 @@ unit Buffs;
 interface
 
 uses
-    Helpers, Assist, Global;
+    Helpers, Assist, Global, Attack;
 
 const
     CANCEL_END_SOUND = 'sound/cancel.wav';
@@ -167,7 +167,6 @@ begin
             then begin
                 Engine.SetTarget(User);
                 Engine.UseSkill(NOBLESS_BUFF);
-                Engine.CancelTarget;
                 Delay(800);
                 continue;
             end;
@@ -276,7 +275,6 @@ begin
                 delay(100);
                 Engine.SetTarget(User);
                 Engine.UseSkill(NOBLESS_BUFF);
-                Engine.CancelTarget;
                 Delay(800);
                 AssistStatus := true;
                 continue;
@@ -298,11 +296,17 @@ procedure Resurrection();
 var
     i: integer;
     buff: TL2Skill;
+    lastRadar: boolean;
+    lastAttack: boolean;
 begin
     if (not User.Dead)
     then exit;
 
     AssistStatus := false;
+    lastRadar := IsRadar;
+    lastAttack := AutoAttack;
+    IsRadar := false;
+    AutoAttack := false;
 
     while (not User.Buffs.ByID(NOBLESS_BUFF, buff)) do
     begin
@@ -319,6 +323,8 @@ begin
     end;
 
     AssistStatus := true;
+    IsRadar := lastRadar;
+    AutoAttack := lastAttack;
 end;
 
 procedure FoundCancelEnd();
@@ -349,13 +355,15 @@ begin
     while true do
     begin
         try
-            if (User.ClassID = MM_CLASS)
+            if (UserProfile = MM_PROFILE)
             then begin
                 BuffsSelfMM();
                 if (not IsRadar)
                 then BuffsPartyMM();
-            end
-            else BuffsSelfArch();
+            end;
+
+            if (UserProfile = ARCH_PROFILE)
+            then BuffsSelfArch();
         except
             print('Fail to buff.');
         end;

@@ -19,6 +19,7 @@ var
     Sets: TSettings;
     RadarSound, AssistSound: boolean;
     IsAutoAttack: boolean;
+    IsMoveToAssister: boolean;
     AAKey, FRKey, CKey, MAKey: Char;
     NTKey, RRKey, NCSKey, NCKey, WIKey: Char;
 
@@ -132,6 +133,20 @@ begin
     PrintBotMsg('https://github.com/adrixfree');
     PrintBotMsg('Change your configs in settings.ini');
     PrintBotMsg('===========================');
+
+    if (User.ClassID = MM_CLASS)
+    then begin
+        UserProfile := MM_PROFILE;
+        PrintBotMsg('Selected profile: MM');
+    end;
+
+    if (User.ClassID = ARCHER_CLASS)
+        or (User.ClassID = GHOST_SENTINEL_CLASS)
+        or (User.ClassID = MOONLIGHT_SENTINEL_CLASS)
+    then begin
+        UserProfile := ARCH_PROFILE;
+        PrintBotMsg('Selected profile: ARCHER');
+    end;
 end;
 
 ///////////////////////////////////////////////////////////
@@ -200,16 +215,14 @@ begin
             then begin
                 if (GetKeyState(ord(MAKey)) > 1)
                 then begin
-                    for i := 0 to PartyAssisters.Count - 1 do
+                    if (IsMoveToAssister)
+                    then begin
+                        IsMoveToAssister := false;
+                        PrintBotMsg('Move to assister: DISABLED');
+                    end else
                     begin
-                        if (CharList.ByName(PartyAssisters[i], target))
-                        then begin
-                            if (not target.Dead) and (target.Target.Name <> target.Name)
-                            then begin
-                                Engine.DMoveTo(target.X, target.Y + 10, target.Z);
-                                break;
-                            end;
-                        end;
+                        IsMoveToAssister := true;
+                        PrintBotMsg('Move to assister: ENABLED');
                     end;
                     delay(300);
                 end;
@@ -323,8 +336,39 @@ end;
 
 procedure OnPacket(ID1, ID2: cardinal; Data: pointer; DataSize: word);
 begin
-    if (ID1 = MAGIC_SKILL_USE_PACKET) or (ID1 = CHAR_INFO_PACKET)
+    if (ID1 = CHAR_INFO_PACKET) or (ID1 = MAGIC_SKILL_USE_PACKET)
     then BackLightPacket(ID1, Data, DataSize);
+
+    if (ID1 = MAGIC_SKILL_USE_PACKET)
+    then begin
+        AutoFlashPacket(Data, DataSize);
+        AssistPacket(Data, DataSize);
+    end;
+end;
+
+procedure MoveToAssisterThread();
+var
+    i: integer;
+    target: TL2Char;
+begin
+    while true do
+    begin
+        if (IsMoveToAssister) and (not IsRadar)
+        then begin
+            for i := 0 to PartyAssisters.Count - 1 do
+            begin
+                if (CharList.ByName(PartyAssisters[i], target))
+                then begin
+                    if (not target.Dead) and (target.Target.Name <> target.Name)
+                    then begin
+                        Engine.DMoveTo(target.X - 10, target.Y + 10, target.Z);
+                        break;
+                    end;
+                end;
+            end;
+        end;
+        delay(300);
+    end;
 end;
 
 ///////////////////////////////////////////////////////////
@@ -349,4 +393,7 @@ begin
     script.NewThread(@FindTargetAfterKillThread);
     script.NewThread(@BackLightPartyThread);
     script.NewThread(@RunUIThread);
+    script.NewThread(@MoveToAssisterThread);
+    script.NewThread(@AutoFlashThread);
+    script.NewThread(@AssistAttackThread());
 end.

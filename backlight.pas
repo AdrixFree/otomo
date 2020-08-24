@@ -170,10 +170,13 @@ begin
             begin
                 target := CharList.Items(i);
 
-                if (ShowAssisters) and (target.ClanID <> User.ClanID)
+                if (ShowAssisters)
                 then begin
                     for j := 0 to Assisters.Count - 1 do
                     begin
+                        if (j > Assisters.Count - 1)
+                        then break;
+
                         if (target.OID = Cardinal(Assisters[j]))
                         then begin
                             if (target.ClanID = User.ClanID)

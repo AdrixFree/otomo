@@ -7,16 +7,14 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, jpeg, ExtCtrls;
 
-const
-  WM_PluginShow = WM_USER + 5402;
-
 type
   TForm1 = class(TForm)
     Image1: TImage;
+    Timer1: TTimer;
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
-    procedure ShowPlugin(var Msg: TMessage); message WM_PluginShow;
   public
     { Public declarations }
   end;
@@ -28,15 +26,15 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.ShowPlugin(var Msg: TMessage);
-begin
-   Form1.Visible := not Form1.Visible;
-end;
-
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
    CanClose := false;
    Visible := false;
+end;
+
+procedure TForm1.Timer1Timer(Sender: TObject);
+begin
+    Timer1.Enabled := false;
 end;
 
 end.

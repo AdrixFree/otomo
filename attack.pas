@@ -11,17 +11,19 @@ unit Attack;
 interface
 
 uses
-	Helpers, Assist, Classes;
+    Helpers, Assist, Classes, Global, Packets;
 
 type
     AttackType = (SURRENDER_ATTACK, LIGHT_ATTACK, SOLAR_ATTACK);
 
 const
-	FOE_CAST_SOUND = 'sound/foe.wav';
+    FOE_CAST_SOUND = 'sound/foe.wav';
 
-	RANGE_SKILLS_COUNT = 4;
+    RANGE_SKILLS_COUNT = 4;
     SOLAR_SKILLS_COUNT = 3;
     FLASH_SKILLS_COUNT = 7;
+
+    FLASH_SKILL_RETRIES = 20;
 
     ARCH_ATTACK_DELAY = 500;
 
@@ -31,12 +33,15 @@ const
 
     procedure AttackInit();
     procedure AttackThread();
+    procedure AutoFlashThread();
+    procedure AutoFlashPacket(Data: pointer; DataSize: word);
 
 var
-	LastTargetName: string;
+    LastTargetName: string;
     AutoAttack: boolean;
     AtkType: AttackType;
     FindFoe: boolean;
+    FlashUsers: TList;
     SurrRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
     LightRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
     SolarRangeSkills: array[1..SOLAR_SKILLS_COUNT] of integer;
@@ -52,7 +57,9 @@ implementation
 
 procedure AttackInit();
 begin
-	SurrRangeSkills[1] := SURRENDER_WATER_SKILL;
+    FlashUsers := TList.Create();
+
+    SurrRangeSkills[1] := SURRENDER_WATER_SKILL;
     SurrRangeSkills[2] := SOLAR_FLARE_SKILL;
     SurrRangeSkills[3] := HYDRO_BLAST_SKILL;
     SurrRangeSkills[4] := ICE_DAGGER_SKILL;
@@ -75,50 +82,32 @@ begin
     FlashSkills[7] := SPELL_FORCE_SKILL;
 end;
 
+procedure AutoFlashPacket(Data: pointer; DataSize: word);
+var
+    packet: TNetworkPacket;
+    oid, skill, i: cardinal;
+begin
+    packet := TNetworkPacket.Create(Data, DataSize);
+    oid := packet.ReadD();
+    packet.ReadD();
+    skill := packet.ReadD();
+    packet.Free();
+
+    for i := 1 to FLASH_SKILLS_COUNT do
+    begin
+        if (skill = FlashSkills[i])
+        then begin
+            FlashUsers.Add(Pointer(oid));
+            exit;
+        end;
+    end;
+end;
+
 ///////////////////////////////////////////////////////////
 //
 //                     PRIVATE FUNCTIONS
 //
 ///////////////////////////////////////////////////////////
-
-function IsFlashSkill(id : cardinal) : boolean;
-var
-    i: integer;
-begin
-    for i := 1 to FLASH_SKILLS_COUNT do
-    begin
-        if (id = FlashSkills[i])
-        then begin
-            result := true;
-            exit;
-        end;
-    end;
-    result := false;
-end;
-
-procedure AutoFlash();
-var
-    target: TL2Char;
-    i: integer;
-begin
-    for i := 0 to CharList.Count - 1 do
-    begin
-        target := CharList.Items(i);
-        if (not target.Dead) and (target.ClanID <> User.ClanID)
-            and (User.DistTo(target) <= FLASH_DISTANCE) and (not target.IsMember)
-        then begin
-            if (target.Cast.EndTime > 0) and (IsFlashSkill(target.Cast.ID))
-            then Engine.UseSkill(AURA_FLASH_SKILL, False, False);
-
-            if (FindFoe) and (target.Cast.EndTime > 0)
-                and (target.Cast.ID = FOE_SKILL)
-            then begin
-                Engine.SetTarget(target);
-                PlaySound(script.Path + FOE_CAST_SOUND);
-            end;
-        end;
-    end;
-end;
 
 procedure RangeAttackMM();
 var
@@ -135,9 +124,6 @@ begin
             if (SurrRangeSkills[i] = ICE_DAGGER_SKILL)
                 and (User.AtkSpd > MIN_CAST_SPD)
             then continue;
-
-            AssistAttack();
-            AutoFlash();
 
             Engine.GetSkillList.ByID(SurrRangeSkills[i], skill);
             Engine.GetSkillList.ByID(SOLAR_FLARE_SKILL, solar);
@@ -180,9 +166,6 @@ begin
                 and (User.AtkSpd > MIN_CAST_SPD)
             then continue;
 
-            AssistAttack();
-            AutoFlash();
-
             Engine.GetSkillList.ByID(LightRangeSkills[i], skill);
             Engine.GetSkillList.ByID(SOLAR_FLARE_SKILL, solar);
             Engine.GetSkillList.ByID(LIGHT_VORTEX_SKILL, light);
@@ -218,9 +201,6 @@ begin
                 and (User.AtkSpd > MIN_CAST_SPD)
             then continue;
 
-            AssistAttack();
-            AutoFlash();
-
             Engine.GetSkillList.ByID(SolarRangeSkills[i], skill);
             Engine.GetSkillList.ByID(SOLAR_FLARE_SKILL, solar);
 
@@ -245,6 +225,46 @@ end;
 //
 ///////////////////////////////////////////////////////////
 
+procedure AutoFlashThread();
+var
+    target: TL2Char;
+    i, j: integer;
+    skill: TL2Skill;
+begin
+    while true do
+    begin
+        try
+            for i := 0 to FlashUsers.Count - 1 do
+            begin
+                if (i > FlashUsers.Count - 1)
+                then break;
+
+                if (CharList.ByOID(Cardinal(FlashUsers[i]), target))
+                then begin
+                    if (not target.Dead) and (target.ClanID <> User.ClanID)
+                        and (User.DistTo(target) <= FLASH_DISTANCE) and (not target.IsMember)
+                    then begin
+                        for j := 1 to FLASH_SKILL_RETRIES do
+                        begin
+                            delay(100);
+
+                            Engine.GetSkillList.ByID(AURA_FLASH_SKILL, skill);
+                            Engine.DUseSkill(AURA_FLASH_SKILL, false, false);
+
+                            if (skill.EndTime > 0) or (User.Dead)
+                            then break;
+                        end;
+                    end;
+                end;
+                FlashUsers.Delete(i);
+            end;
+        except
+            print('Fail to autoflash');
+        end;
+        delay(50);
+    end;
+end;
+
 procedure AttackThread();
 var
     Assister: TL2Char;
@@ -254,17 +274,11 @@ begin
         try
             if (AutoAttack)
             then begin
-                if (User.ClassID = MM_CLASS)
-                then RangeAttackMM()
-                else Engine.Attack(ARCH_ATTACK_DELAY, false);
-            end
-            else begin
-                if (User.ClassID = MM_CLASS)
-                then begin
-                    AssistAttack();
-                    AutoFlash();
-                    delay(100);
-                end;
+                if (UserProfile = MM_PROFILE)
+                then RangeAttackMM();
+                
+                if (UserProfile = ARCH_PROFILE)
+                then Engine.Attack(ARCH_ATTACK_DELAY, false);
             end;
             delay(10);
         except

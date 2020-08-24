@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.259,C:\msys64\home\Serg\new\otomo\ui\SettingsForm.dfm=C:\msys64\home\Serg\new\otomo\ui\Unit2.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.526,=C:\msys64\home\Serg\new\otomo\ui\Unit2.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.259,C:\msys64\home\Serg\new\otomo\ui\SettingsForm.pas=C:\msys64\home\Serg\new\otomo\ui\Unit2.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.626,=C:\msys64\home\Serg\new\otomo\ui\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.030,C:\msys64\home\Serg\new\otomo\ui\Unit1.pas=C:\msys64\home\Serg\new\otomo\ui\Buffer.pas</Transaction>
+  </Transactions>
+	<ProjectSortOrder AutoSort="0" SortType="0">
+	</ProjectSortOrder>
+</BorlandProject>

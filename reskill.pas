@@ -11,7 +11,7 @@ unit Reskill;
 interface
 
 uses
-	Target, Helpers, SysUtils;
+	Target, Helpers, SysUtils, Global;
 
 const
 	RESKILL_MOD = 0;
@@ -42,11 +42,14 @@ begin
             Engine.WaitAction([laRevive], p1, p2);
             enemy := TL2Live(p1);
 
+            if (not IsRadar)
+            then continue;
+
             if (CharList.ByName(enemy.Name, target))
             then begin
                 if (User.DistTo(target) <= StrToInt(RangeList[CurRange]))
                     and (not target.Dead) and (target.ClanID <> User.ClanID)
-                    and (not target.IsMember)
+                    and (not target.IsMember) and (not User.Dead)
                 then begin
                     if (ClassList[CurClass] <> 'ALL')
                     then begin
@@ -62,7 +65,7 @@ begin
 
                     Engine.SetTarget(target);
 
-                    if (User.ClassID = MM_CLASS) and (ReskillSolar)
+                    if (UserProfile = MM_PROFILE) and (ReskillSolar)
                     then Engine.DUseSkill(SOLAR_FLARE_SKILL, False, False);
                     Delay(ReskillDelay);
                 end;
