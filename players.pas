@@ -31,6 +31,7 @@ type
         function Name(): String;
         function Team(): byte;
         procedure SetHero(status: boolean);
+        function Hero(): boolean;
         procedure SetTeam(team: byte);
         procedure SetTitleColor(r, g, b: byte);
         procedure SetNickColor(r, g, b: byte);
@@ -100,6 +101,17 @@ begin
     if (status)
     then (PByte(@Data[Size - (42 + Delta)])^) := 1
     else (PByte(@Data[Size - (42 + Delta)])^) := 0;
+end;
+
+function TPlayer.Hero(): boolean;
+var
+    field: byte;
+begin
+    field := PByte(@Data[Size - (42 + Delta)])^;
+
+    if (field = 1)
+    then result := true
+    else result := false;
 end;
 
 procedure TPlayer.SetTeam(team: byte);

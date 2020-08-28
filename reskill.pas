@@ -11,15 +11,15 @@ unit Reskill;
 interface
 
 uses
-	Target, Helpers, SysUtils, Global;
+    Target, Helpers, SysUtils, Global;
 
 const
-	RESKILL_MOD = 0;
+    RESKILL_MOD = 0;
 
-	procedure ReskillThread();
+    procedure ReskillThread();
 
 var
-	ReskillDelay: integer;
+    ReskillDelay: integer;
     ReskillSolar: boolean;
 
 implementation
@@ -35,6 +35,8 @@ var
     p1, p2: pointer;
     enemy: TL2Live;
     target: TL2Char;
+    i: integer;
+    excluded: boolean;
 begin
     while True do
     begin
@@ -62,6 +64,19 @@ begin
                         if (target.Clan <> ClanList[CurClan])
                         then continue;
                     end;
+
+                    excluded := false;
+                    for i := 0 to ExcludedClans.Count - 1 do
+                    begin
+                        if (ExcludedClans[i] = target.Clan)
+                        then begin
+                            excluded := true;
+                            break;
+                        end;
+                    end;
+
+                    if (excluded)
+                    then continue;
 
                     Engine.SetTarget(target);
 

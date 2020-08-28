@@ -1,3 +1,4 @@
+
 ///////////////////////////////////////////////////////////
 //
 //                          OTOMO
@@ -61,6 +62,7 @@ begin
             packet.ReadD();
             skill := packet.ReadD();
 
+            // Find assisters
             if (skill = SURRENDER_WATER_SKILL)
             then begin
                 found := false;
@@ -81,14 +83,30 @@ begin
                 end;
             end;
 
+            // Anti fake assisters
+            if (skill = LIGHT_VORTEX_SKILL)
+                or (skill = ICE_VORTEX_SKILL)
+            then begin
+                for i := 0 to Assisters.Count - 1 do
+                begin
+                    if (i > Assisters.Count - 1)
+                    then break;
+
+                    if (oid = Cardinal(Assisters[i]))
+                    then Assisters.Delete(i);
+                end;
+            end;
+
             packet.Free();
         end;
 
+        // Backlight players
         if (ID1 = CHAR_INFO_PACKET)
         then begin
             player := TPlayer.Create(Data, DataSize);
-            if (player.Team = 0)
+            if (player.Team() = 0)
             then begin
+                // Show assisters
                 for i := 0 to Assisters.Count - 1 do
                 begin
                     if (Cardinal(Assisters[i]) = player.OID)
@@ -100,6 +118,7 @@ begin
                     end;
                 end;
 
+                // Show party members
                 for i := 0 to PartyList.Count - 1 do
                 begin
                     if (PartyList[i] = player.Name)
@@ -111,12 +130,16 @@ begin
                     end;
                 end;
 
-                if (Leaders[0] = player.Name)
+                // Show leader
+                if (Leaders.Count > 0)
                 then begin
-                    player.SetTeam(1);
-                    player.SetNickColor(0, $FF, 0);
-                    player.SetTitleColor(0, $FF, 0);
-                    player.SetHero(true);
+                    if (Leaders[0] = player.Name)
+                    then begin
+                        player.SetTeam(1);
+                        player.SetNickColor(0, $FF, 0);
+                        player.SetTitleColor(0, $FF, 0);
+                        player.SetHero(true);
+                    end;
                 end;
 
                 if (player.Team > 0)
@@ -191,10 +214,13 @@ begin
                     end;
                 end;
 
-                if (target.Name = Leaders[0]) and (ShowLeader)
+                if (Leaders.Count > 0)
                 then begin
-                    SendTitle(target.OID, '>>> LEADER <<<');
-                    delay(10);
+                    if (target.Name = Leaders[0]) and (ShowLeader)
+                    then begin
+                        SendTitle(target.OID, '>>> LEADER <<<');
+                        delay(10);
+                    end;
                 end;
             end;
         except

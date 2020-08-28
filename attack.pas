@@ -14,7 +14,7 @@ uses
     Helpers, Assist, Classes, Global, Packets;
 
 type
-    AttackType = (SURRENDER_ATTACK, LIGHT_ATTACK, SOLAR_ATTACK);
+    AttackType = (SURRENDER_ATTACK, LIGHT_ATTACK, ICE_ATTACK, SOLAR_ATTACK);
 
 const
     FOE_CAST_SOUND = 'sound/foe.wav';
@@ -24,11 +24,8 @@ const
     FLASH_SKILLS_COUNT = 7;
 
     FLASH_SKILL_RETRIES = 20;
-
     ARCH_ATTACK_DELAY = 500;
-
     MIN_CAST_SPD = 1671;
-
     FLASH_DISTANCE = 200;
 
     procedure AttackInit();
@@ -44,6 +41,7 @@ var
     FlashUsers: TList;
     SurrRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
     LightRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
+    IceRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
     SolarRangeSkills: array[1..SOLAR_SKILLS_COUNT] of integer;
     FlashSkills: array[1..FLASH_SKILLS_COUNT] of integer;
 
@@ -68,6 +66,11 @@ begin
     LightRangeSkills[2] := LIGHT_VORTEX_SKILL;
     LightRangeSkills[3] := HYDRO_BLAST_SKILL;
     LightRangeSkills[4] := ICE_DAGGER_SKILL;
+
+    IceRangeSkills[1] := SOLAR_FLARE_SKILL;
+    IceRangeSkills[2] := ICE_VORTEX_SKILL;
+    IceRangeSkills[3] := HYDRO_BLAST_SKILL;
+    IceRangeSkills[4] := ICE_DAGGER_SKILL;
 
     SolarRangeSkills[1] := SOLAR_FLARE_SKILL;
     SolarRangeSkills[2] := HYDRO_BLAST_SKILL;
@@ -112,7 +115,7 @@ end;
 procedure RangeAttackMM();
 var
     i : integer;
-    skill, light, solar : TL2Skill;
+    skill, light, solar, ice : TL2Skill;
 begin
     if (AtkType = SURRENDER_ATTACK)
     then begin
@@ -190,6 +193,41 @@ begin
         end;
     end
     else
+    if (AtkType = ICE_ATTACK)
+    then begin
+        for i := 1 to RANGE_SKILLS_COUNT do
+        begin
+            if (not AutoAttack)
+            then break;
+
+            if (IceRangeSkills[i] = ICE_DAGGER_SKILL)
+                and (User.AtkSpd > MIN_CAST_SPD)
+            then continue;
+
+            Engine.GetSkillList.ByID(IceRangeSkills[i], skill);
+            Engine.GetSkillList.ByID(SOLAR_FLARE_SKILL, solar);
+            Engine.GetSkillList.ByID(ICE_VORTEX_SKILL, ice);
+
+            if (not User.Target.Dead)
+            then begin
+                if (IceRangeSkills[i] = ICE_VORTEX_SKILL)
+                then begin
+                    if (solar.EndTime = 0)
+                    then continue;
+                end;
+
+                if (IceRangeSkills[i] = HYDRO_BLAST_SKILL)
+                    or (IceRangeSkills[i] = ICE_DAGGER_SKILL)
+                then begin
+                    if (solar.EndTime = 0) or (ice.EndTime = 0)
+                    then continue;
+                end;
+                Engine.DUseSkill(IceRangeSkills[i], False, False);
+                Delay(200);
+            end;
+        end;
+    end
+    else
     if (AtkType = SOLAR_ATTACK)
     then begin
         for i := 1 to SOLAR_SKILLS_COUNT do
@@ -233,6 +271,12 @@ var
 begin
     while true do
     begin
+        if (UserProfile <> MM_PROFILE)
+        then begin
+            delay(100);
+            continue;
+        end;
+
         try
             for i := 0 to FlashUsers.Count - 1 do
             begin
@@ -268,12 +312,28 @@ end;
 procedure AttackThread();
 var
     Assister: TL2Char;
+    i: integer;
+    excluded: boolean;
 begin
     while true do
     begin
         try
             if (AutoAttack)
             then begin
+                excluded := false;
+                for i := 0 to ExcludedClans.Count - 1 do
+                begin
+                    if (ExcludedClans[i] = User.Target.Clan)
+                    then begin
+                        excluded := true;
+                        delay(100);
+                        break;
+                    end;
+                end;
+
+                if (excluded)
+                then continue;
+
                 if (UserProfile = MM_PROFILE)
                 then RangeAttackMM();
                 

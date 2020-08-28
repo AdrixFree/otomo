@@ -35,6 +35,7 @@ const
     AURA_SYMPHONY_SKILL = 1288;
     ARCANE_CHAOS_SKILL = 1338;
     ICE_DAGGER_SKILL = 1237;
+    ICE_VORTEX_SKILL = 1340;
     SPELL_FORCE_SKILL = 427;
 
     // Target classes

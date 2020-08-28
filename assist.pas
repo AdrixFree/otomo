@@ -130,9 +130,6 @@ begin
                                         if (skill.EndTime > 0) or (User.Dead)
                                         then break;
                                     end;
-
-
-                                    
                                 end else
                                 begin
                                     for k := 1 to ASSIST_SKILL_RETRIES do
@@ -145,9 +142,6 @@ begin
                                         if (skill.EndTime > 0) or (User.Dead)
                                         then break;
                                     end;
-
-
-                                    
                                 end;
                             end;
 

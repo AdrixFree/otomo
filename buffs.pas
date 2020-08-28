@@ -103,7 +103,6 @@ begin
                 then begin
                     AssistStatus := false;
                     engine.SetTarget(player);
-                    delay(300);
                     engine.UseSkill(RESIST_AQUA_BUFF);
                     delay(300);
                     AssistStatus := true;
@@ -118,7 +117,6 @@ begin
             then begin
                 AssistStatus := false;
                 engine.SetTarget(player);
-                delay(300);
                 engine.UseItem(WALkiNG_SCROLL_ITEM);
                 delay(300);
                 AssistStatus := true;
@@ -132,7 +130,6 @@ begin
             then begin
                 AssistStatus := false;
                 engine.SetTarget(player);
-                delay(300);
                 engine.UseSkill(NOBLESS_BUFF);
                 delay(300);
                 AssistStatus := true;

@@ -128,7 +128,8 @@ var
     enemy: TL2Live;
     target: TL2Char;
     p1, p2: Pointer;
-    i: integer;
+    i, j: integer;
+    excluded: boolean;
 begin
     while True do
     begin
@@ -163,6 +164,20 @@ begin
                                 if (target.Clan <> ClanList[CurClan])
                                 then continue;
                             end;
+
+                            excluded := false;
+                            for j := 0 to ExcludedClans.Count - 1 do
+                            begin
+                                if (ExcludedClans[j] = target.Clan)
+                                then begin
+                                    excluded := true;
+                                    delay(100);
+                                    break;
+                                end;
+                            end;
+
+                            if (excluded)
+                            then continue;
 
                             LastTargetName := target.Name;
                             Engine.SetTarget(target);
