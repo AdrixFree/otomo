@@ -15,6 +15,9 @@ interface
 uses
     Classes, Packets;
 
+type
+    UserClass = (MAG_CLASS, WARIOR_CLASS);
+
 
 const
     // User skills
@@ -89,6 +92,8 @@ const
     procedure PrintBotMsg(text: string);
     function ClassToID(str: string): cardinal;
     procedure SendTitle(oid: Cardinal; str: string);
+    function KeyToCode(key: string): integer;
+    function GetUserClass(cl: integer): UserClass;
 
 implementation
 
@@ -159,5 +164,59 @@ begin
     p.Free();
 end;
 
+function KeyToCode(key: string): integer;
+begin
+    if (key = '') then result := 0 else
+    if (key = 'NUM0') then result := $60 else
+    if (key = 'NUM1') then result := $61 else
+    if (key = 'NUM2') then result := $62 else
+    if (key = 'NUM3') then result := $63 else
+    if (key = 'NUM4') then result := $64 else
+    if (key = 'NUM5') then result := $65 else
+    if (key = 'NUM6') then result := $66 else
+    if (key = 'NUM7') then result := $67 else
+    if (key = 'NUM8') then result := $68 else
+    if (key = 'NUM9') then result := $69 else
+    if (key = 'TAB') then result := $09 else
+    if (key = 'SHIFT') then result := $10 else
+    if (key = 'CAPS') then result := $14 else
+    if (key = 'CTRL') then result := $11 else
+    if (key = 'ALT') then result := $12 else
+    if (key = 'F1') then result := $70 else
+    if (key = 'F2') then result := $71 else
+    if (key = 'F3') then result := $72 else
+    if (key = 'F4') then result := $73 else
+    if (key = 'F5') then result := $74 else
+    if (key = 'F6') then result := $75 else
+    if (key = 'F7') then result := $76 else
+    if (key = 'F8') then result := $77 else
+    if (key = 'F9') then result := $78 else
+    if (key = 'F10') then result := $79 else
+    if (key = 'F11') then result := $7A else
+    if (key = 'F12') then result := $7B else
+    if (key = 'DEL') then result := $2E else
+    if (key = 'END') then result := $23 else
+    if (key = 'PGDOWN') then result := $22 else
+    if (key = 'PGUP') then result := $21 else
+    if (key = 'HOME') then result := $24 else
+    if (key = 'INS') then result := $2D else
+    if (key = 'PAUSE') then result := $13 else
+    if (key = 'SPACE') then result := $20 else
+    if (key = 'NUM+') then result := $6B else
+    if (key = 'NUM-') then result := $6D else
+    if (key = 'NUM*') then result := $6A else
+    if (key = 'NUM/') then result := $6F else
+    if (key = 'NUM.') then result := $6E else
+    result := ord(key[1]);
+end;
+
+function GetUserClass(cl: integer): UserClass;
+begin
+    if (cl = MM_CLASS) or (cl = BP_CLASS)
+        or (cl = NECR_CLASS) or (cl = PP_CLASS) or (cl = SS_CLASS)
+        or (cl = SORC_CLASS) or (cl = DOMINATOR_CLASS)
+    then result := MAG_CLASS
+    else result := WARIOR_CLASS;
+end;
 
 end.

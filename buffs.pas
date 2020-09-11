@@ -15,19 +15,15 @@ uses
 
 const
     CANCEL_END_SOUND = 'sound/cancel.wav';
-
     ELEXIR_MIN_HP = 15;
     ELEXIR_MIN_CP = 15;
-
     CANCEL_END_TIME = 2;
-
-    MM_BUFFS_COUNT = 6;
-    ARCH_BUFFS_COUNT = 9;
-
+    MM_BUFFS_COUNT = 5;
+    ARCH_BUFFS_COUNT = 8;
+    BUFF_RETRIES = 10;
     RESIST_AQUA_DISTANCE = 400;
     NOBLESS_DISTANCE = 400;
     WALKING_SCROLL_DISTANCE = 400;
-
     TRANCE_DEBUFF_BIT = 7;
 
     procedure BuffsInit();
@@ -42,6 +38,7 @@ var
     ResistAquaInCombat: boolean;
     CheckCancel: boolean;
     PartyNobless: boolean;
+    FlashAfterRes: boolean;
     AutoDash: boolean;
     ArchBuffs : array[1..ARCH_BUFFS_COUNT] of integer;
     MMBuffs: array[1..MM_BUFFS_COUNT] of integer;
@@ -56,22 +53,20 @@ implementation
 
 procedure BuffsInit();
 begin
-    MMBuffs[1] := NOBLESS_BUFF;
-    MMBuffs[2] := ARCANE_BUFF;
-    MMBuffs[3] := CRYSTAL_BUFF;
-    MMBuffs[4] := RESIST_AQUA_BUFF;
-    MMBuffs[5] := WIND_WALK_BUFF;
-    MMBuffs[6] := ACUMEN_BUFF;
+    MMBuffs[1] := ARCANE_BUFF;
+    MMBuffs[2] := CRYSTAL_BUFF;
+    MMBuffs[3] := RESIST_AQUA_BUFF;
+    MMBuffs[4] := WIND_WALK_BUFF;
+    MMBuffs[5] := ACUMEN_BUFF;
 
     ArchBuffs[1] := RAPID_SHOT_BUFF;
     ArchBuffs[2] := CRYSTAL_BUFF;
     ArchBuffs[3] := STANCE_BUFF;
     ArchBuffs[4] := ACCURACY_BUFF;
     ArchBuffs[5] := DASH_BUFF;
-    ArchBuffs[6] := NOBLESS_BUFF;
-    ArchBuffs[7] := BLESSING_SAGITARIUS_BUFF;
-    ArchBuffs[8] := HASTE_BUFF;
-    ArchBuffs[9] := WIND_WALK_BUFF;
+    ArchBuffs[6] := BLESSING_SAGITARIUS_BUFF;
+    ArchBuffs[7] := HASTE_BUFF;
+    ArchBuffs[8] := WIND_WALK_BUFF;
 end;
 
 ///////////////////////////////////////////////////////////
@@ -140,11 +135,13 @@ end;
 
 procedure BuffsSelfArch();
 var
-    i : integer;
+    i, j : integer;
     buff, skill: TL2Skill;
 begin
     for i := 1 to ARCH_BUFFS_COUNT do
     begin
+        for j := 0 to BUFF_RETRIES do
+        begin
         if (not User.Buffs.ByID(ArchBuffs[i], buff))
         then begin
             if (ArchBuffs[i] = DASH_BUFF) and (not AutoDash)
@@ -164,7 +161,7 @@ begin
             then begin
                 Engine.SetTarget(User);
                 Engine.UseSkill(NOBLESS_BUFF);
-                Delay(800);
+                Delay(400);
                 continue;
             end;
 
@@ -190,131 +187,143 @@ begin
             end;
 
             Engine.UseSkill(ArchBuffs[i]);
-            Delay(600);
+            Delay(400);
+        end
+        else break;
+        delay(100);
         end;
     end;
 
-    if (User.HP < ELEXIR_MIN_HP)
+    if (User.HP < ELEXIR_MIN_HP) and (not User.Dead)
     then Engine.UseItem(ELEXIR_HP_ITEM);
 
-    if (User.CP < ELEXIR_MIN_CP)
+    if (User.CP < ELEXIR_MIN_CP) and (not User.Dead)
     then Engine.UseItem(ELEXIR_CP_ITEM);
 end;
 
 procedure BuffsSelfMM();
 var
-    i : integer;
+    i, j : integer;
     buff : TL2Skill;
 begin
-    if (FastRes)
-    then Resurrection();
-
     if (CheckCancel)
     then FoundCancelEnd();
 
     for i := 1 to MM_BUFFS_COUNT do
     begin
-        if (not User.Buffs.ByID(MMBuffs[i], buff))
-        then begin
-            if (MMBuffs[i] = CRYSTAL_BUFF)
-            then begin
-                if (not Crystal)
-                then continue;
+        for j := 0 to BUFF_RETRIES do
+        begin
+            if (User.Dead)
+            then Resurrection();
 
-                Engine.UseItem(CRYSTAL_ITEM);
-                Delay(100);
-                continue;
-            end;
-
-            if (MMBuffs[i] = RESIST_AQUA_BUFF)
+            if (not User.Buffs.ByID(MMBuffs[i], buff))
             then begin
-                if ((ResistAquaInCombat) or ((not ResistAquaInCombat) and (not User.InCombat)))
-                    and (not IsRadar)
+                if (MMBuffs[i] = CRYSTAL_BUFF)
                 then begin
-                    if (not User.Buffs.ByID(SURRENDER_WATER_SKILL, buff))
+                    if (not Crystal)
+                    then continue;
+
+                    Engine.UseItem(CRYSTAL_ITEM);
+                    Delay(100);
+                    continue;
+                end;
+
+                if (MMBuffs[i] = RESIST_AQUA_BUFF)
+                then begin
+                    if ((ResistAquaInCombat) or ((not ResistAquaInCombat) and (not User.InCombat)))
+                        and (not IsRadar)
                     then begin
-                        AssistStatus := false;
-                        delay(100);
-                        Engine.SetTarget(User);
-                        Engine.UseSkill(RESIST_AQUA_BUFF);
-                        Delay(400);
-                        AssistStatus := true;
+                        if (not User.Buffs.ByID(SURRENDER_WATER_SKILL, buff))
+                        then begin
+                            AssistStatus := false;
+                            delay(100);
+                            Engine.SetTarget(User);
+                            Engine.UseSkill(RESIST_AQUA_BUFF);
+                            Delay(100);
+                            AssistStatus := true;
+                        end;
+                    end;
+                    continue;
+                end;
+
+                if (MMBuffs[i] = Integer(WIND_WALK_BUFF))
+                then begin
+                    if (not User.Buffs.ByID(PAAGRIO_HASTE_BUFF, buff)) and
+                        (not User.Buffs.ByID(HASTE_POTION_BUFF, buff))
+                    then begin
+                        Engine.UseItem(HASTE_POTION_ITEM);
+                        Delay(100);
+                        continue;
                     end;
                 end;
-                continue;
-            end;
 
-            if (MMBuffs[i] = Integer(WIND_WALK_BUFF))
-            then begin
-                if (not User.Buffs.ByID(PAAGRIO_HASTE_BUFF, buff)) and
-                    (not User.Buffs.ByID(HASTE_POTION_BUFF, buff))
+                if (MMBuffs[i] = Integer(ACUMEN_BUFF))
                 then begin
-                    Engine.UseItem(HASTE_POTION_ITEM);
-                    Delay(100);
-                    continue;
+                    if (not User.Buffs.ByID(WISDOM_PAAGRIO_BUFF, buff)) and
+                        (not User.Buffs.ByID(MAGIC_HASTE_POTION_BUFF, buff))
+                    then begin
+                        Engine.UseItem(MAGIC_HASTE_POTION_ITEM);
+                        Delay(100);
+                        continue;
+                    end;
                 end;
-            end;
 
-            if (MMBuffs[i] = Integer(ACUMEN_BUFF))
-            then begin
-                if (not User.Buffs.ByID(WISDOM_PAAGRIO_BUFF, buff)) and
-                    (not User.Buffs.ByID(MAGIC_HASTE_POTION_BUFF, buff))
-                then begin
-                    Engine.UseItem(MAGIC_HASTE_POTION_ITEM);
-                    Delay(100);
-                    continue;
-                end;
-            end;
-
-            if (MMBuffs[i] = NOBLESS_BUFF)
-            then begin
-                AssistStatus := false;
-                delay(100);
-                Engine.SetTarget(User);
-                Engine.UseSkill(NOBLESS_BUFF);
-                Delay(800);
-                AssistStatus := true;
-                continue;
-            end;
-
-            Engine.UseSkill(MMBuffs[i]);
-            Delay(800);
+                Engine.UseSkill(MMBuffs[i]);
+                Delay(400);
+            end
+            else break;
+            delay(100);
         end;
     end;
 
-    if (User.HP < ELEXIR_MIN_HP)
+    if (User.HP < ELEXIR_MIN_HP) and (not User.Dead)
     then Engine.UseItem(ELEXIR_HP_ITEM);
 
-    if (User.CP < ELEXIR_MIN_CP)
+    if (User.CP < ELEXIR_MIN_CP) and (not User.Dead)
     then Engine.UseItem(ELEXIR_CP_ITEM);
 end;
 
 procedure Resurrection();
 var
-    i: integer;
+    i, cnt: integer;
     buff: TL2Skill;
+    target: TL2Char;
     lastRadar: boolean;
     lastAttack: boolean;
 begin
-    if (not User.Dead)
-    then exit;
-
     AssistStatus := false;
     lastRadar := IsRadar;
     lastAttack := AutoAttack;
     IsRadar := false;
     AutoAttack := false;
+    cnt := 0;
 
     while (not User.Buffs.ByID(NOBLESS_BUFF, buff)) do
     begin
-        if (not FastRes)
-        then break;
-
-        if (User.Dead) and (User.AbnormalID <= 2)
+        if (User.Dead) and (User.AbnormalID <= 2) and (FastRes)
         then Engine.ConfirmDialog(true);
 
         Engine.SetTarget(User);
-        Engine.DUseSkill(NOBLESS_BUFF, true, false);
+        Engine.DUseSkill(NOBLESS_BUFF, false, false);
+
+        if (FlashAfterRes)
+        then begin
+            for i := 0 to CharList.Count - 1 do
+            begin
+                target := CharList.Items(i);
+                if (User.DistTo(target) <= 150) and (User.ClanID <> target.ClanID)
+                    and (not target.IsMember)
+                then begin
+                    cnt := cnt + 1;
+                    if (cnt >= 2)
+                    then begin
+                        Engine.DUseSkill(AURA_FLASH_SKILL, false, false);
+                        cnt := 0;
+                        break;
+                    end;
+                end;
+            end;
+        end;
 
         delay(200);
     end;

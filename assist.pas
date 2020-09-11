@@ -176,6 +176,7 @@ begin
                     if (CharList.ByName(PartyAssisters[i], target))
                     then begin
                         if (not target.Dead) and (target.Target.Name <> target.Name)
+                            and (not IgnoreAssister)
                         then begin
                             Engine.Assist(target.Name);
                             status := false;

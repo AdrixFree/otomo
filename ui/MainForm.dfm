@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 660
   Top = 229
   BorderStyle = bsDialog
-  Caption = 'OTOMO v3.5 (by LanGhost)'
+  Caption = 'OTOMO v3.6 (by LanGhost)'
   ClientHeight = 503
   ClientWidth = 604
   Color = clBtnFace

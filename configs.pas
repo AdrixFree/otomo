@@ -12,26 +12,13 @@ interface
 
 uses
     Keyboard, Attack, Assist, Target, Reskill, Global, Buffs,
-    SysUtils, Backlight;
+    SysUtils, Backlight, Helpers;
 
 const
     CFG_MOD = 0;
     procedure LoadConfigs(fileName: string);
 
 implementation
-
-///////////////////////////////////////////////////////////
-//
-//                     HELPER FUNCTIONS
-//
-///////////////////////////////////////////////////////////
-
-function LoadKey(key: string): Char;
-begin
-    if (key = 'SPACE')
-    then result := ' '
-    else result := key[1];
-end;
 
 ///////////////////////////////////////////////////////////
 //
@@ -46,7 +33,7 @@ var
 begin
     CheckCancel := Sets.LoadB('Global', 'CheckCancel');
     ArcaneChaos := Sets.LoadB('Global', 'ArcaneChaos');
-    i := Sets.LoadI('Global', 'AttackType');
+    i := Sets.LoadI('Global', 'RangeAttackType');
     if (i = 1)
     then AtkType := SURRENDER_ATTACK
     else
@@ -58,15 +45,25 @@ begin
     else
     if (i = 4)
     then AtkType := SOLAR_ATTACK;
+
+    i := Sets.LoadI('Global', 'MiliAttackType');
+    if (i = 1)
+    then AtkTypeMili := BOLT_ATTACK
+    else
+    if (i = 2)
+    then AtkTypeMili := FLARE_ATTACK;
+
     FindFoe := Sets.LoadB('Global', 'FindFOE');
+
     for i := 1 to 4 do
     begin
         str := Sets.LoadS('Global', 'ExcludedClan' + IntToStr(i));
         if (str <> '') then ExcludedClans.Add(str);
     end;
 
+    FlashAfterRes := Sets.LoadB('Global', 'FlashAfterRes');
+
     FindAfterKill := Sets.LoadB('Radar', 'NextTargetAfterKill');
-    IsAutoAttack := Sets.LoadB('Global', 'AutoAttack');
     for i := 1 to 4 do
     begin
         str := Sets.LoadS('Radar', 'Clan' + IntToStr(i));
@@ -93,6 +90,8 @@ begin
 
     ReskillDelay := Sets.LoadI('Reskill', 'Delay');
     ReskillSolar := Sets.LoadB('Reskill', 'AutoSolar');
+    ReskillDetect := Sets.LoadB('Reskill', 'ReskillSoundChat');
+
     for i := 1 to 3 do
     begin
         str := Sets.LoadS('Reskill', 'Range' + IntToStr(i));
@@ -103,15 +102,18 @@ begin
     RadarSound := Sets.LoadB('Sound', 'RadarMode');
     AssistSound := Sets.LoadB('Sound', 'AssistMode');
 
-    AAKey := LoadKey(Sets.LoadS('Keyboard', 'AutoAttack'));
-    FRKey := LoadKey(Sets.LoadS('Keyboard', 'FastResurrection'));
-    CKey := LoadKey(Sets.LoadS('Keyboard', 'Cancel'));
-    MAKey := LoadKey(Sets.LoadS('Keyboard', 'MoveToAssister'));
-    NTKey := LoadKey(Sets.LoadS('Keyboard', 'NextTarget'));
-    RRKey := LoadKey(Sets.LoadS('Keyboard', 'ReskillRange'));
-    NCSKey := LoadKey(Sets.LoadS('Keyboard', 'NextClass'));
-    NCKey := LoadKey(Sets.LoadS('Keyboard', 'NextClan'));
-    WIKey := LoadKey(Sets.LoadS('Keyboard', 'WarlordIgnore'));
+    SCPKey := KeyToCode(Sets.LoadS('Keyboard', 'ScriptPause'));
+    AAPKey := KeyToCode(Sets.LoadS('Keyboard', 'AutoAssistPause'));
+    AAKey := KeyToCode(Sets.LoadS('Keyboard', 'AutoAttack'));
+    RAKey := KeyToCode(Sets.LoadS('Keyboard', 'NextAutoAttackType'));
+    FRKey := KeyToCode(Sets.LoadS('Keyboard', 'FastResurrection'));
+    CKey := KeyToCode(Sets.LoadS('Keyboard', 'Cancel'));
+    MAKey := KeyToCode(Sets.LoadS('Keyboard', 'MoveToAssister'));
+    NTKey := KeyToCode(Sets.LoadS('Keyboard', 'NextTarget'));
+    RRKey := KeyToCode(Sets.LoadS('Keyboard', 'ReskillRange'));
+    NCSKey := KeyToCode(Sets.LoadS('Keyboard', 'NextClass'));
+    NCKey := KeyToCode(Sets.LoadS('Keyboard', 'NextClan'));
+    WIKey := KeyToCode(Sets.LoadS('Keyboard', 'WarlordIgnore'));
 end;
 
 end.

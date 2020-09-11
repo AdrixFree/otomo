@@ -15,6 +15,7 @@ uses
 
 type
     AttackType = (SURRENDER_ATTACK, LIGHT_ATTACK, ICE_ATTACK, SOLAR_ATTACK);
+    AttackTypeMili = (BOLT_ATTACK, FLARE_ATTACK);
 
 const
     FOE_CAST_SOUND = 'sound/foe.wav';
@@ -22,6 +23,7 @@ const
     RANGE_SKILLS_COUNT = 4;
     SOLAR_SKILLS_COUNT = 3;
     FLASH_SKILLS_COUNT = 7;
+    MILI_SKILLS_COUNT = 2;
 
     FLASH_SKILL_RETRIES = 20;
     ARCH_ATTACK_DELAY = 500;
@@ -36,7 +38,8 @@ const
 var
     LastTargetName: string;
     AutoAttack: boolean;
-    AtkType: AttackType;
+    AtkType: AttackType = SURRENDER_ATTACK;
+    AtkTypeMili: AttackTypeMili = BOLT_ATTACK;
     FindFoe: boolean;
     FlashUsers: TList;
     SurrRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
@@ -44,6 +47,8 @@ var
     IceRangeSkills: array[1..RANGE_SKILLS_COUNT] of integer;
     SolarRangeSkills: array[1..SOLAR_SKILLS_COUNT] of integer;
     FlashSkills: array[1..FLASH_SKILLS_COUNT] of integer;
+    MiliSkillsBolt: array[1..MILI_SKILLS_COUNT] of integer;
+    MiliSkillsFlare: array[1..MILI_SKILLS_COUNT] of integer;
 
 implementation
 
@@ -83,6 +88,12 @@ begin
     FlashSkills[5] := ALI_CLEANSE;
     FlashSkills[6] := CELESTIAL_SHIELD;
     FlashSkills[7] := SPELL_FORCE_SKILL;
+
+    MiliSkillsBolt[1] := AURA_BOLT_SKILL;
+    MiliSkillsBolt[2] := AURA_FLASH_SKILL;
+
+    MiliSkillsFlare[1] := AURA_FLARE_SKILL;
+    MiliSkillsFlare[2] := AURA_FLASH_SKILL;
 end;
 
 procedure AutoFlashPacket(Data: pointer; DataSize: word);
@@ -122,6 +133,9 @@ begin
         for i := 1 to RANGE_SKILLS_COUNT do
         begin
             if (not AutoAttack)
+            then break;
+
+            if (User.Target.ClanID = User.ClanID) or (User.Target.IsMember)
             then break;
 
             if (SurrRangeSkills[i] = ICE_DAGGER_SKILL)
@@ -165,6 +179,9 @@ begin
             if (not AutoAttack)
             then break;
 
+            if (User.Target.ClanID = User.ClanID) or (User.Target.IsMember)
+            then break;
+
             if (LightRangeSkills[i] = ICE_DAGGER_SKILL)
                 and (User.AtkSpd > MIN_CAST_SPD)
             then continue;
@@ -198,6 +215,9 @@ begin
         for i := 1 to RANGE_SKILLS_COUNT do
         begin
             if (not AutoAttack)
+            then break;
+
+            if (User.Target.ClanID = User.ClanID) or (User.Target.IsMember)
             then break;
 
             if (IceRangeSkills[i] = ICE_DAGGER_SKILL)
@@ -235,6 +255,9 @@ begin
             if (not AutoAttack)
             then break;
 
+            if (User.Target.ClanID = User.ClanID) or (User.Target.IsMember)
+            then break;
+
             if (SolarRangeSkills[i] = ICE_DAGGER_SKILL)
                 and (User.AtkSpd > MIN_CAST_SPD)
             then continue;
@@ -251,6 +274,51 @@ begin
                     then continue;
                 end;
                 Engine.DUseSkill(SolarRangeSkills[i], False, False);
+                Delay(200);
+            end;
+        end;
+    end;
+end;
+
+procedure MiliAttackMM();
+var
+    i: integer;
+    skill: TL2Skill;
+begin
+    if (AtkTypeMili = BOLT_ATTACK)
+    then begin
+        for i := 1 to MILI_SKILLS_COUNT do
+        begin
+            if (not AutoAttack)
+            then break;
+
+            if (User.Target.ClanID = User.ClanID) or (User.Target.IsMember)
+            then break;
+
+            Engine.GetSkillList.ByID(MiliSkillsBolt[i], skill);
+
+            if (skill.EndTime = 0) and (not User.Target.Dead)
+            then  begin
+                Engine.DUseSkill(MiliSkillsBolt[i], False, False);
+                Delay(200);
+            end;
+        end;
+    end else
+    if (AtkTypeMili = FLARE_ATTACK)
+    then begin
+        for i := 1 to MILI_SKILLS_COUNT do
+        begin
+            if (not AutoAttack)
+            then break;
+
+            if (User.Target.ClanID = User.ClanID) or (User.Target.IsMember)
+            then break;
+
+            Engine.GetSkillList.ByID(MiliSkillsFlare[i], skill);
+
+            if (skill.EndTime = 0) and (not User.Target.Dead)
+            then  begin
+                Engine.DUseSkill(MiliSkillsFlare[i], False, False);
                 Delay(200);
             end;
         end;
@@ -335,9 +403,15 @@ begin
                 then continue;
 
                 if (UserProfile = MM_PROFILE)
-                then RangeAttackMM();
+                then begin
+                    if (RangeAttack)
+                    then RangeAttackMM()
+                    else MiliAttackMM();
+                end;
                 
                 if (UserProfile = ARCH_PROFILE)
+                    and (User.Target.ClanID <> User.ClanID)
+                    and (not User.Target.IsMember)
                 then Engine.Attack(ARCH_ATTACK_DELAY, false);
             end;
             delay(10);

@@ -19,12 +19,19 @@ const
     procedure KeysThread();
 
 var
-    AAKey, FRKey, CKey, MAKey: Char;
-    NTKey, RRKey, NCSKey, NCKey, WIKey: Char;
-    IsAutoAttack: boolean;
+    AAKey, FRKey, CKey, MAKey, SCPKey, AAPKey, RAKey: integer;
+    NTKey, RRKey, NCSKey, NCKey, WIKey, ROAMKey: integer;
     IsMoveToAssister: boolean;
 
 implementation
+
+///////////////////////////////////////////////////////////
+//
+//                    WINAPI FUNCTIONS
+//
+///////////////////////////////////////////////////////////
+ 
+function GetAsyncKeyState(vKey: integer): integer; stdcall; external 'user32.dll';
 
 ///////////////////////////////////////////////////////////
 //
@@ -39,11 +46,58 @@ var
     excluded: boolean;
     target: TL2Char;
     cancel, chaos, aura: TL2Skill;
+    scriptPause: boolean;
 begin
+    scriptPause := true;
+
     while true do
     begin
         try
-            if (GetKeyState(ord(AAKey)) > 1) and (IsAutoAttack)
+            if (GetAsyncKeyState(SCPKey) <> 0)
+            then begin
+                if (scriptPause)
+                then begin
+                    scriptPause := false;
+                    script.Suspend();
+                    PrintBotMsg('Script: PAUSE');
+                end else
+                begin
+                    scriptPause := true;
+                    script.Resume();
+                    PrintBotMsg('Script: RUN');
+                end;
+                delay(300);
+            end;
+
+            if (GetAsyncKeyState(AAPKey) <> 0)
+            then begin
+                if (IgnoreAssister)
+                then begin
+                    IgnoreAssister := false;
+                    PrintBotMsg('Auto assist: RUN');
+                end else
+                begin
+                    IgnoreAssister := true;
+                    PrintBotMsg('Auto assist: PAUSE');
+                end;
+                delay(300);
+            end;
+
+            if (GetAsyncKeyState(RAKey) <> 0)
+            then begin
+                if (RangeAttack)
+                then begin
+                    RangeAttack := false;
+                    PrintBotMsg('Auto attack type: MILI');
+                end else
+                begin
+                    RangeAttack := true;
+                    PrintBotMsg('Auto attack type: RANGE');
+                end;
+                delay(300);
+            end;
+
+            if (GetAsyncKeyState(AAKey) <> 0)
             then begin
                 if (AutoAttack)
                 then begin
@@ -57,7 +111,7 @@ begin
                 delay(300);
             end;
 
-            if (GetKeyState(ord(FRKey)) > 1)
+            if (GetAsyncKeyState(FRKey) <> 0)
             then begin
                 if (FastRes)
                 then begin
@@ -71,7 +125,7 @@ begin
                 delay(300);
             end;
 
-            if (GetKeyState(ord(CKey)) > 1)
+            if (GetAsyncKeyState(CKey) <> 0)
             then begin
                 for i := 1 to ASSIST_SKILL_RETRIES do
                 begin
@@ -91,7 +145,7 @@ begin
 
             if (not IsRadar)
             then begin
-                if (GetKeyState(ord(MAKey)) > 1)
+                if (GetAsyncKeyState(MAKey) <> 0)
                 then begin
                     if (IsMoveToAssister)
                     then begin
@@ -108,7 +162,7 @@ begin
 
             if (IsRadar)
             then begin
-                if (GetKeyState(ord(NTKey)) > 1)
+                if (GetAsyncKeyState(NTKey) <> 0)
                 then begin
                     for i := 0 to CharList.Count - 1 do
                     begin
@@ -150,7 +204,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord(RRKey)) > 1)
+                if (GetAsyncKeyState(RRKey) <> 0)
                 then begin
                     if (CurRange < RangeList.Count - 1)
                     then CurRange := CurRange + 1
@@ -160,7 +214,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord(NCSKey)) > 1)
+                if (GetAsyncKeyState(NCSKey) <> 0)
                 then begin
                     if (CurClass < ClassList.Count - 1)
                     then CurClass := CurClass + 1
@@ -170,7 +224,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord(NCKey)) > 1)
+                if (GetAsyncKeyState(NCKey) <> 0)
                 then begin
                     if (CurClan < ClanList.Count - 1)
                     then CurClan := CurClan + 1
@@ -180,7 +234,7 @@ begin
                     delay(300);
                 end;
 
-                if (GetKeyState(ord(WIKey)) > 1)
+                if (GetAsyncKeyState(WIKey) <> 0)
                 then begin
                     if (WarlordIgnore)
                     then begin

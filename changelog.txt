@@ -1,0 +1,13 @@
+3.6
+- Add script pause key
+- Add auto assist pause key
+- Not auto attack party and clan members
+- Fix nobless support after resurrection
+- Add auto flash after resurrection
+- Fix reading keys for some PCs
+- Fix self and party buffs
+- Add NUM keys, Alternate keys for script managment
+- Add help document
+- Add mili auto attack
+- Add reskill sound and chat message
+- Add random position delta for follow assister function

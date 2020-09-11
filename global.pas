@@ -14,7 +14,7 @@ uses
     Classes;
 
 type
-    TProfile = (MM_PROFILE, ARCH_PROFILE, NECR_PROFILE, PP_PROFILE);
+    TProfile = (MM_PROFILE, ARCH_PROFILE, NECR_PROFILE, PP_PROFILE, UNKNOWN_PROFILE);
 
 const
 	GLOB_MOD = 0;
@@ -24,12 +24,15 @@ var
     IsRadar: boolean;
     UserProfile: TProfile;
     ExcludedClans: TStringList;
+    IgnoreAssister: boolean = false;
+    RangeAttack: boolean = true;
 
 implementation
 
 procedure GlobalInit();
 begin
     ExcludedClans := TStringList.Create();
+    UserProfile := UNKNOWN_PROFILE;
 end;
 
 end.

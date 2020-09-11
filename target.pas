@@ -15,6 +15,9 @@ uses
 
 const
     DEAD_SOUND = 'sound/dead.wav';
+    RESKILL_SOUND = 'sound/reskill.wav';
+
+    MAX_RESKILLED_USERS = 50;
 
     procedure TargetInit();
     procedure TargetSaveThread();
@@ -29,6 +32,8 @@ var
     DeadSound: boolean;
     FindAfterKill: boolean;
     LastTargetName: string;
+    ReskillDetect: boolean;
+    ReskilledUsers: TStringList;
 
 implementation
 
@@ -43,6 +48,7 @@ begin
     RangeList := TStringList.Create();
     ClassList := TStringList.Create();
     ClanList := TStringList.Create();
+    ReskilledUsers := TStringList.Create();
 
     CurRange := 0;
     CurClass := 0;
@@ -129,7 +135,8 @@ var
     target: TL2Char;
     p1, p2: Pointer;
     i, j: integer;
-    excluded: boolean;
+    lastCast, lastAtk: integer;
+    excluded, found: boolean;
 begin
     while True do
     begin
@@ -143,7 +150,64 @@ begin
                 then continue;
 
                 PrintBotMsg('Target "' + enemy.Name + '" was killed. Find next.');
-                if (DeadSound) then PlaySound(script.Path + DEAD_SOUND);
+                if (DeadSound)
+                then PlaySound(script.Path + DEAD_SOUND);
+
+                if (ReskillDetect)
+                then begin
+                    CharList.ByName(User.Target.Name, target);
+                    lastCast := target.CastSpd;
+                    lastAtk := target.AtkSpd;
+
+                    for i := 0 to 5 do
+                    begin
+                        CharList.ByName(User.Target.Name, target);
+                        if (target.CastSpd <> lastCast) or (target.AtkSpd <> lastAtk)
+                        then begin
+                            lastCast := target.CastSpd;
+                            lastAtk := target.AtkSpd;
+                            break;
+                        end;
+                        delay(100);
+                    end;
+
+                    if (not target.Valid)
+                    then continue;
+
+                    if ((GetUserClass(target.ClassID) = MAG_CLASS) and (lastCast <= 1000))
+                        or ((GetUserClass(target.ClassID) = WARIOR_CLASS) and (lastAtk <= 800)) 
+                    then begin
+                        for i := 0 to ReskilledUsers.Count - 1 do
+                        begin
+                            if (target.Name = ReskilledUsers[i])
+                            then begin
+                                found := true;
+                                break;
+                            end;
+                        end;
+
+                        if (not found)
+                        then begin
+                            ReskilledUsers.Insert(0, target.Name);
+
+                            PlaySound(script.Path + RESKILL_SOUND);
+                            PrintBotMsg('User "' + target.Name + '" was reskilled!');
+
+                            if (ReskilledUsers.Count > MAX_RESKILLED_USERS)
+                            then ReskilledUsers.Delete(MAX_RESKILLED_USERS);
+                        end;
+                    end else
+                    begin
+                        for i := 0 to ReskilledUsers.Count - 1 do
+                        begin
+                            if (target.Name = ReskilledUsers[i])
+                            then begin
+                                ReskilledUsers.Delete(i);
+                                break;
+                            end;
+                        end;
+                    end;
+                end;
 
                 if (FindAfterKill)
                 then begin
